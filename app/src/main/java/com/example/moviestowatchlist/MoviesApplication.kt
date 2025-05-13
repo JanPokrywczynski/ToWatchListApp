@@ -9,17 +9,26 @@ import com.example.moviestowatchlist.data.repository.SeriesRepository
 /**
  * Custom Application class used to initialize global resources
  * such as the Room database and repositories for dependency injection.
+ *
+ * This class is instantiated once during the application's lifetime and can
+ * be used to expose shared dependencies (e.g., Room database, repositories)
+ * to other parts of the app without needing a full dependency injection framework.
  */
 class MoviesApplication : Application() {
 
-    /** Singleton instance of the Room database, initialized lazily. */
+    /**
+     * Lazily initialized singleton instance of the Room database.
+     * The database is created only when it is first accessed.
+     *
+     * Uses the application context to avoid memory leaks and ensure consistent lifecycle.
+     */
     val database: AppDatabase by lazy {
         AppDatabase.getDatabase(this)
     }
 
     /** Repository for managing movie data. */
     lateinit var movieRepository: MoviesRepository
-        private set
+        private set // Only this class can modify the reference
 
     /** Repository for managing series data. */
     lateinit var seriesRepository: SeriesRepository
