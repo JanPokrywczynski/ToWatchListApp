@@ -48,6 +48,9 @@ sealed interface SavedContentUiState {
 }
 
 
+
+
+
 /**
  * ViewModel responsible for managing UI state of the SavedContentScreen.
  * Observes locally stored movies or series (with episodes), and updates the state accordingly.
@@ -69,6 +72,8 @@ class SavedContentViewModel(
     private val _uiState = MutableStateFlow<SavedContentUiState>(SavedContentUiState.Loading)
     val uiState: StateFlow<SavedContentUiState> = _uiState.asStateFlow()
 
+
+    /** Starts observing the selected type immediately after ViewModel is initialized. */
     init {
         observeContent()
     }
@@ -76,37 +81,66 @@ class SavedContentViewModel(
 
     /**
      * Observes changes in the selected content type and updates the UI state accordingly.
-     * If "movie" is selected, collects data from moviesRepository.
-     * If "series" is selected, starts observing series and their episodes.
+     *
+     * If "movie" is selected:
+     *   - Observes a list of locally stored movies from the repository.
+     *   - Maps it to a MoviesSuccess or Empty UI state.
+     *
+     * If "series" is selected:
+     *   - Calls a separate method to observe series and their episodes.
+     *   - Does not emit anything directly in this flow, as state is updated elsewhere.
+     *
+     * All emitted UI states are collected and pushed to the _uiState flow.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeContent() {
+
+        // Launch a coroutine tied to the lifecycle of the ViewModel.
+        // This ensures cleanup when the ViewModel is cleared (e.g., when the screen is closed).
         viewModelScope.launch {
+
+            // Observe changes to the selected content type (e.g., "movie" or "series").
+            // Whenever the selected type changes, flatMapLatest cancels the previous flow and starts a new one.
             _selectedType
                 .flatMapLatest { type ->
+                    // This block will re-execute each time _selectedType.value changes.
+                    // Based on the value, a new data flow (e.g., from a repository) will be started.
+
                     Log.d("SavedContentViewModel", "Selected type changed to: $type")
+
+
                     when (type) {
                         "movie" -> {
+                            // Map movies list into a MoviesSuccess UI state
                             moviesRepository.moviesFlow.map {
                                 Log.d("SavedContentViewModel", "Loaded ${it.size} saved movies.")
                                 SavedContentUiState.MoviesSuccess(it)
                             }
                         }
 
+
                         "series" -> {
-                            observeSeriesWithEpisodes() // osobna obserwacja ustawia stan
-                            flowOf() // nic nie emitujemy tutaj, stan obsługuje osobna obserwacja
+                            // Start observing series separately (state will be updated internally)
+                            observeSeriesWithEpisodes()
+                            flowOf() // Return an empty flow here — nothing to emit directly
                         }
 
                         else -> flowOf(SavedContentUiState.Empty)
                     }
                 }
+
+                // Catch any exception that occurs in the upstream flow (e.g., from Room or mapping)
+                // Logs the error and updates the UI state with an error message to inform the user
                 .catch { e ->
                     Log.e("SavedContentViewModel", "Error during content observation: ${e.message}")
                     _uiState.value = SavedContentUiState.Error(e.message ?: "Unknown error")
                 }
+
+
+                // Collect the emitted UI state from the flow and update the screen accordingly
                 .collect { state ->
-                    // Handle movies state only – series handled separately
+
+                    // Only handle movie-related state here. Series state is managed in a separate observer.
                     if (state is SavedContentUiState.MoviesSuccess) {
                         _uiState.value =
                             if (state.movies.isEmpty()) {
@@ -124,6 +158,10 @@ class SavedContentViewModel(
         }
     }
 
+
+
+
+
     /**
      * Updates the currently selected type of content.
      * Triggers content observation based on the new type.
@@ -134,6 +172,9 @@ class SavedContentViewModel(
         Log.d("SavedContentViewModel", "updateSelectedType: $type")
         _selectedType.value = type
     }
+
+
+
 
 
     /**
@@ -147,6 +188,8 @@ class SavedContentViewModel(
             episodeRepository.markNextEpisodeAsWatched(seriesId)
         }
     }
+
+
 
 
     /**
@@ -163,6 +206,9 @@ class SavedContentViewModel(
             episodeRepository.markPreviousEpisodeAsUnwatched(seriesId)
         }
     }
+
+
+
 
     /**
      * Toggles the watched state of a given movie.
@@ -186,6 +232,8 @@ class SavedContentViewModel(
     }
 
 
+
+
     /**
      * Deletes a saved movie from the local database.
      *
@@ -197,6 +245,9 @@ class SavedContentViewModel(
             moviesRepository.deleteMovie(movie)
         }
     }
+
+
+
 
     /**
      * Deletes a saved series and all its episodes from the local database.
@@ -212,6 +263,9 @@ class SavedContentViewModel(
     }
 
 
+
+
+
     /**
      * Observes the list of locally stored series and their episodes.
      * For each series, it combines the corresponding list of episodes,
@@ -223,14 +277,18 @@ class SavedContentViewModel(
             // Prevent enrichment from being launched multiple times for the same series
             val enrichmentStarted = mutableSetOf<String>()
 
+
+            // Start observing the list of saved series from the repository.
             seriesRepository.seriesFlow
                 .flatMapLatest { seriesList ->
-                    // If no series are saved locally, emit an empty UI state
+                    // If the list of series is empty, emit an empty UI state and stop.
                     if (seriesList.isEmpty()) {
                         _uiState.value = SavedContentUiState.Empty
                         return@flatMapLatest flowOf(emptyList())
                     }
-                    // Combine episodes for each series into a unified list of SeriesWithEpisodes
+
+                    // For each series, retrieve its list of episodes and combine them into SeriesWithEpisodes.
+                    // The result is a Flow<List<SeriesWithEpisodes>>.
                     combine(
                         seriesList.map { series ->
                             episodeRepository.getEpisodesForSeries(series.imdbId)
@@ -238,8 +296,11 @@ class SavedContentViewModel(
                                     SeriesWithEpisodes(series, episodes)
                                 }
                         }
-                    ) { it.toList() }
+                    ) { it.toList() } // Combine result into a single list
                 }
+
+
+                // Collect the combined list of SeriesWithEpisodes and update the UI accordingly.
                 .collect { seriesWithEpisodes ->
                     Log.d(
                         "SavedContentViewModel",
@@ -252,12 +313,14 @@ class SavedContentViewModel(
                     else
                         SavedContentUiState.SeriesWithEpisodesSuccess(seriesWithEpisodes)
 
-                    // Trigger background enrichment for series that haven't been processed yet
+
+
+                    // For each series, start background enrichment if it hasn't been started yet.
                     seriesWithEpisodes.forEach { seriesWith ->
                         val seriesId = seriesWith.series.imdbId
                         if (seriesId !in enrichmentStarted) {
                             enrichmentStarted.add(seriesId)
-                            enrichEpisodesInBackground(seriesId)
+                            enrichEpisodesInBackground(seriesId) // Launch background enrichment
                         }
                     }
                 }
@@ -292,6 +355,8 @@ class SavedContentViewModel(
             // Filter episodes that still need to be enriched with full details
             val episodesToUpdate = episodes.filter { !it.detailsFetched }
 
+
+            // For each episode that needs enrichment, fetch details from the OMDb API
             for (episode in episodesToUpdate) {
                 try {
                     // Fetch full episode details from OMDb API
@@ -307,12 +372,12 @@ class SavedContentViewModel(
                             plot = details.plot,
                             detailsFetched = true
                         )
+
                         // Update episode in the local database
                         episodeRepository.addEpisodes(listOf(updated))
                         Log.d("ENRICH_EPISODES", "Enriched episode ${episode.imdbId}")
                     } else {
                         Log.w("ENRICH_EPISODES", "Failed to enrich ${episode.imdbId}: Invalid response")
-
                     }
                 } catch (e: Exception) {
                     Log.e(
