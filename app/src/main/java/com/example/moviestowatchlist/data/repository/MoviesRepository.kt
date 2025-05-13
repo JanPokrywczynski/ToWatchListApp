@@ -53,14 +53,4 @@ class MoviesRepository(private val dao: MoviesDao) {
             dao.updateMovie(movie)
         }
     }
-
-    /**
-     * Deletes all movies from the local database.
-     */
-    suspend fun clearAll() {
-        withContext(Dispatchers.IO) {
-            Log.d("MoviesRepository", "Clearing all movies from the database")
-            dao.deleteAllMovies()
-        }
-    }
 }
