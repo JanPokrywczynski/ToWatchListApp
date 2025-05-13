@@ -37,26 +37,33 @@ abstract class AppDatabase : RoomDatabase() {
         /** Name of the database file. */
         private const val DATABASE_NAME = "content_database"
 
-        /** Singleton instance (thread-safe). */
+        /**
+         * Singleton instance of the database.
+         * Marked as @Volatile to ensure atomic visibility across threads.
+         */
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
         /**
-         * Returns the singleton instance of the Room database.
-         * If the instance does not yet exist, it is created.
+         * Returns a singleton instance of the [AppDatabase].
+         * Creates the database if it has not already been initialized.
          *
-         * Uses destructive migration strategy — all data is wiped when schema changes.
+         * The method is thread-safe due to the use of `synchronized`.
+         * It uses application context to avoid memory leaks.
+         *
+         * @param context Android application context (not an activity context)
+         * @return Singleton instance of the database
          */
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    DATABASE_NAME
+                    context.applicationContext, // Prevent memory leaks
+                    AppDatabase::class.java, // Reference to the abstract class
+                    DATABASE_NAME // Name of the database file
                 )
-                    .fallbackToDestructiveMigration() // wipe and rebuild DB on schema version change
+                    .fallbackToDestructiveMigration(false) // wipe and rebuild DB on schema version change
                     .build()
-                    .also { INSTANCE = it }
+                    .also { INSTANCE = it } // Assign instance after building
             }
         }
     }
