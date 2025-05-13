@@ -63,15 +63,7 @@ class EpisodesRepository(private val dao: EpisodesDao) {
         } ?: Log.d("EpisodesRepository", "No previously watched episode for seriesId: $seriesId")
     }
 
-    /**
-     * Deletes all episodes from the database.
-     */
-    suspend fun clearAll() {
-        withContext(Dispatchers.IO) {
-            Log.d("EpisodesRepository", "Deleting all episodes")
-            dao.deleteAllEpisodes()
-        }
-    }
+
 
     /**
      * Deletes all episodes associated with a specific series.
