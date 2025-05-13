@@ -3,11 +3,9 @@ package com.example.moviestowatchlist.ui.screens.SavedScreen
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.moviestowatchlist.BuildConfig
 import com.example.moviestowatchlist.data.local.Movies.MoviesEntity
 import com.example.moviestowatchlist.data.local.Series.SeriesEntity
 import com.example.moviestowatchlist.data.local.repository.MoviesRepository
-import com.example.moviestowatchlist.data.remote.retrofit.RetrofitClient
 import com.example.moviestowatchlist.data.repository.EpisodesRepository
 import com.example.moviestowatchlist.data.repository.SeriesRepository
 import kotlinx.coroutines.Dispatchers
@@ -17,12 +15,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import retrofit2.awaitResponse
 
 /**
  * Represents the possible UI states for the SavedContent screen.
@@ -349,43 +345,7 @@ class SavedContentViewModel(
      */
     private fun enrichEpisodesInBackground(seriesId: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            // Get all episodes stored locally for the given series
-            val episodes = episodeRepository.getEpisodesForSeries(seriesId).first()
-
-            // Filter episodes that still need to be enriched with full details
-            val episodesToUpdate = episodes.filter { !it.detailsFetched }
-
-
-            // For each episode that needs enrichment, fetch details from the OMDb API
-            for (episode in episodesToUpdate) {
-                try {
-                    // Fetch full episode details from OMDb API
-                    val response = RetrofitClient.apiService.getContentDetails(
-                        imdbId = episode.imdbId,
-                        apiKey = BuildConfig.OMDB_API_KEY
-                    ).awaitResponse()
-
-                    val details = response.body()
-                    if (response.isSuccessful && details?.response == "True") {
-                        val updated = episode.copy(
-                            runtime = details.runtime,
-                            plot = details.plot,
-                            detailsFetched = true
-                        )
-
-                        // Update episode in the local database
-                        episodeRepository.addEpisodes(listOf(updated))
-                        Log.d("ENRICH_EPISODES", "Enriched episode ${episode.imdbId}")
-                    } else {
-                        Log.w("ENRICH_EPISODES", "Failed to enrich ${episode.imdbId}: Invalid response")
-                    }
-                } catch (e: Exception) {
-                    Log.e(
-                        "ENRICH_EPISODES",
-                        "Failed to fetch details for ${episode.imdbId}: ${e.message}"
-                    )
-                }
-            }
+            episodeRepository.enrichEpisodesForSeries(seriesId)
         }
     }
 }

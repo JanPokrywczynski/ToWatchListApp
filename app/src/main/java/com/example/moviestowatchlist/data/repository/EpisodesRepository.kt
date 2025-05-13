@@ -1,11 +1,15 @@
 package com.example.moviestowatchlist.data.repository
 
 import android.util.Log
+import com.example.moviestowatchlist.BuildConfig
 import com.example.moviestowatchlist.data.local.Episodes.EpisodesDao
 import com.example.moviestowatchlist.data.local.Episodes.EpisodesEntity
+import com.example.moviestowatchlist.data.remote.retrofit.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import retrofit2.awaitResponse
 
 /**
  * Repository layer for managing episode-related operations.
@@ -72,6 +76,52 @@ class EpisodesRepository(private val dao: EpisodesDao) {
         withContext(Dispatchers.IO) {
             Log.d("EpisodesRepository", "Deleting episodes for seriesId: $seriesId")
             dao.deleteEpisodesForSeries(seriesId)
+        }
+    }
+
+
+
+    /**
+     * Enriches episodes for a given series by fetching additional details from the OMDb API.
+     * This is done for episodes that have not yet been enriched.
+     */
+    suspend fun enrichEpisodesForSeries(seriesId: String) {
+        // Get all episodes stored locally for the given series
+        val episodes = getEpisodesForSeries(seriesId).first()
+
+        // Filter episodes that still need to be enriched with full details
+        val episodesToUpdate = episodes.filter { !it.detailsFetched }
+
+
+        // For each episode that needs enrichment, fetch details from the OMDb API
+        for (episode in episodesToUpdate) {
+            try {
+                // Fetch full episode details from OMDb API
+                val response = RetrofitClient.apiService.getContentDetails(
+                    imdbId = episode.imdbId,
+                    apiKey = BuildConfig.OMDB_API_KEY
+                ).awaitResponse()
+
+                val details = response.body()
+                if (response.isSuccessful && details?.response == "True") {
+                    val updated = episode.copy(
+                        runtime = details.runtime,
+                        plot = details.plot,
+                        detailsFetched = true
+                    )
+
+                    // Update episode in the local database
+                    addEpisodes(listOf(updated))
+                    Log.d("ENRICH_EPISODES", "Enriched episode ${episode.imdbId}")
+                } else {
+                    Log.w("ENRICH_EPISODES", "Failed to enrich ${episode.imdbId}: Invalid response")
+                }
+            } catch (e: Exception) {
+                Log.e(
+                    "ENRICH_EPISODES",
+                    "Failed to fetch details for ${episode.imdbId}: ${e.message}"
+                )
+            }
         }
     }
 }
