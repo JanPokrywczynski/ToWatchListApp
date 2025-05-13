@@ -58,6 +58,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -110,13 +111,16 @@ fun SavedContentScreen(
     var expandedItemId by remember { mutableStateOf<String?>(null) }
 
     // Stores the last swipe direction (-1 for right-to-left, 1 for left-to-right)
-    var swipeDirection by remember { mutableStateOf(0) }
+    var swipeDirection by remember { mutableIntStateOf(0) }
 
     // Loads content corresponding to the selected type every time it changes
     LaunchedEffect(selectedType) {
         Log.d("SavedContentScreen", "Selected type changed: $selectedType")
         viewModel.loadContentOfType(selectedType)
     }
+
+
+
 
     // Root column layout for the SavedContent screen.
     // It contains the tab bar and the animated content section (movies or series).
@@ -418,6 +422,8 @@ fun SavedContentScreen(
 }
 
 
+
+
 /**
  * Composable representing a single saved movie item in the watchlist.
  *
@@ -587,6 +593,9 @@ fun MovieItem(
         }
     }
 }
+
+
+
 
 
 /**
@@ -793,6 +802,9 @@ fun SeriesItem(
 }
 
 
+
+
+
 /**
  * Opens the IMDb page for the given content in the browser.
  *
@@ -800,7 +812,11 @@ fun SeriesItem(
  */
 fun Context.openInImdb(imdbId: String) {
     Log.d("IntentAction", "Opening IMDb page for ID: $imdbId")
+
+    // Create a view Intent with the IMDb URL based on the content's ID
     val intent = Intent(Intent.ACTION_VIEW, "https://www.imdb.com/title/$imdbId/".toUri())
+
+    // Launch the intent using the current context (usually an Activity)
     startActivity(intent)
 }
 
@@ -812,11 +828,15 @@ fun Context.openInImdb(imdbId: String) {
  */
 fun Context.shareSeries(imdbId: String) {
     Log.d("IntentAction", "Sharing series with ID: $imdbId")
+
+    // Create an intent to share plain text
     val shareIntent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
+        type = "text/plain" // MIME type for text
         putExtra(Intent.EXTRA_TEXT,
             getString(R.string.check_out_this_series_https_www_imdb_com_title, imdbId))
     }
+
+    // Launch the Android share sheet so the user can pick an app to share with
     startActivity(Intent.createChooser(shareIntent, getString(R.string.share_with)))
 }
 
@@ -828,11 +848,15 @@ fun Context.shareSeries(imdbId: String) {
  */
 fun Context.shareMovie(imdbId: String) {
     Log.d("IntentAction", "Sharing movie with ID: $imdbId")
+
+    // Create an intent to share plain text
     val shareIntent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
+        type = "text/plain" // MIME type for text
         putExtra(Intent.EXTRA_TEXT,
             getString(R.string.check_out_this_movie_https_www_imdb_com_title, imdbId))
     }
+
+    // Open the system chooser for selecting a sharing app
     startActivity(Intent.createChooser(shareIntent, getString(R.string.share_with)))
 }
 
