@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MoviesToWatchList</string>
+    <string name="app_name">ToWatchList</string>
     <string name="saved_movies_screen_title">Saved Movies</string>
     <string name="search_screen_title">Search</string>
     <string name="content_to_watch">Content to watch</string>
