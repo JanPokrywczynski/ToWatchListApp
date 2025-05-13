@@ -44,14 +44,4 @@ class SeriesRepository(private val dao: SeriesDao) {
             dao.deleteSeries(series)
         }
     }
-
-    /**
-     * Deletes all series from the database.
-     */
-    suspend fun clearAll() {
-        withContext(Dispatchers.IO) {
-            Log.d("SeriesRepository", "Clearing all series from database")
-            dao.deleteAllSeries()
-        }
-    }
 }
