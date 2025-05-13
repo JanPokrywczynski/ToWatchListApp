@@ -18,3 +18,27 @@ data class SearchResponse(
     /** Error message if applicable (e.g., "Movie not found!"). Nullable. */
     @Json(name = "Error") val error: String? = null
 )
+
+
+/* https://www.omdbapi.com/?s=batman&
+{
+  "Search": [
+    {
+      "Title": "Batman Begins",
+      "Year": "2005",
+      "imdbID": "tt0372784",
+      "Type": "movie",
+      "Poster": "https://m.media-amazon.com/images/M/MV5BODIyMDdhNTgtNDlmOC00MjUxLWE2NDItODA5MTdkNzY3ZTdhXkEyXkFqcGc@._V1_SX300.jpg"
+    },
+    {
+      "Title": "The Batman",
+      "Year": "2022",
+      "imdbID": "tt1877830",
+      "Type": "movie",
+      "Poster": "https://m.media-amazon.com/images/M/MV5BMmU5NGJlMzAtMGNmOC00YjJjLTgyMzUtNjAyYmE4Njg5YWMyXkEyXkFqcGc@._V1_SX300.jpg"
+    },
+        ...
+  ],
+  "totalResults": "607",
+  "Response": "True"
+}*/
