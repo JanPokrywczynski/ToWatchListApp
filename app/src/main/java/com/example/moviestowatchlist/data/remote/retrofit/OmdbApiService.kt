@@ -19,13 +19,18 @@ object RetrofitClient {
     /** Base URL for the OMDb API */
     private const val BASE_URL = "https://www.omdbapi.com/"
 
-    /** Builds and returns a configured Retrofit instance */
+    /**
+     * Builds and returns a configured Retrofit instance.
+     *
+     * - Uses Moshi as JSON converter
+     * - Uses the base OMDb API URL
+     */
     private fun getClient(): Retrofit {
-        val moshi = Moshi.Builder().build()
+        val moshi = Moshi.Builder().build() // Builds a Moshi instance (default adapters)
 
         return Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .baseUrl(BASE_URL) // Sets the base URL (e.g., "https://www.omdbapi.com/")
+            .addConverterFactory(MoshiConverterFactory.create(moshi)) // Moshi handles JSON parsing
             .build()
     }
 
@@ -51,7 +56,7 @@ interface OmdbApiService {
      * @param type "movie" or "series"
      * @param apiKey Your OMDb API key
      */
-    @GET("/")
+    @GET("/") // Root endpoint, parameters passed via @Query
     fun searchByType(
         @Query("s") query: String,
         @Query("type") type: String,
