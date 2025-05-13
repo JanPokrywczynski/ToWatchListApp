@@ -85,7 +85,7 @@ class EpisodesRepository(private val dao: EpisodesDao) {
      * Enriches episodes for a given series by fetching additional details from the OMDb API.
      * This is done for episodes that have not yet been enriched.
      */
-    suspend fun enrichEpisodesForSeries(seriesId: String) {
+    suspend fun enrichEpisodesForSeries(seriesId: String) = withContext(Dispatchers.IO){
         // Get all episodes stored locally for the given series
         val episodes = getEpisodesForSeries(seriesId).first()
 

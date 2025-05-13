@@ -8,7 +8,6 @@ import com.example.moviestowatchlist.data.local.Series.SeriesEntity
 import com.example.moviestowatchlist.data.local.repository.MoviesRepository
 import com.example.moviestowatchlist.data.repository.EpisodesRepository
 import com.example.moviestowatchlist.data.repository.SeriesRepository
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -344,7 +343,7 @@ class SavedContentViewModel(
      * @param seriesId The IMDb ID of the series for which to enrich episode data.
      */
     private fun enrichEpisodesInBackground(seriesId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             episodeRepository.enrichEpisodesForSeries(seriesId)
         }
     }
