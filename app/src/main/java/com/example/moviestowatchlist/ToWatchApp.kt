@@ -13,8 +13,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -35,7 +33,6 @@ import com.example.moviestowatchlist.ui.screens.SavedScreen.SavedContentScreen
 import com.example.moviestowatchlist.ui.screens.SearchScreen.SearchScreen
 
 
-
 /**
  * Main composable function for the application.
  * Handles navigation, top bar, and snackbar state.
@@ -46,7 +43,7 @@ import com.example.moviestowatchlist.ui.screens.SearchScreen.SearchScreen
 fun ToWatchApp(
     navController: NavHostController = rememberNavController()
 ) {
-    val snackbarHostState = remember { SnackbarHostState() }
+//    val snackbarHostState = remember { SnackbarHostState() }
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val screenName = backStackEntry?.destination?.route?.substringBefore("/")
@@ -73,7 +70,7 @@ fun ToWatchApp(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+//        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         val layoutDirection = LocalLayoutDirection.current
         NavHost(
@@ -159,14 +156,14 @@ fun ToWatchTopBar(
         navigationIcon = {
             if (canNavigateBack) {
                 IconButton(onClick = navigateUp) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                 }
             }
         },
         actions = {
             if (currentScreen != ToWatchDestinations.SEARCH) {
                 IconButton(onClick = onSearchClick) {
-                    Icon(Icons.Filled.Search, contentDescription = "Search")
+                    Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.search))
                 }
             }
 

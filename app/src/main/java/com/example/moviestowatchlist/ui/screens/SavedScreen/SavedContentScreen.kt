@@ -4,7 +4,6 @@ package com.example.moviestowatchlist.ui.screens.SavedScreen
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -68,15 +67,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
+import com.example.moviestowatchlist.R
 import com.example.moviestowatchlist.data.local.Movies.MoviesEntity
 import com.example.moviestowatchlist.data.local.Series.SeriesEntity
 import kotlinx.coroutines.delay
-import androidx.core.net.toUri
 
 
 /**
@@ -263,7 +264,7 @@ fun SavedContentScreen(
                         }
                     } else {
                         // Defensive fallback (unlikely to happen) – mismatch between tab and data
-                        Text("Loading movies...")
+                        Text(stringResource(R.string.loading_movies))
                     }
                 }
 
@@ -349,7 +350,7 @@ fun SavedContentScreen(
                         }
                     } else {
                         // Defensive fallback – prevents mismatch rendering
-                        Text("Loading series...")
+                        Text(stringResource(R.string.loading_series))
                     }
                 }
 
@@ -394,7 +395,7 @@ fun SavedContentScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "Tap the 🔍 icon above to search and add new items to your watchlist.",
+                                text = stringResource(R.string.tap_the_icon_above_to_search_and_add_new_items_to_your_watchlist),
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -536,7 +537,9 @@ fun MovieItem(
                     IconButton(onClick = onWatchedToggle) {
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
-                            contentDescription = if (isWatched) "Watched" else "Mark as watched"
+                            contentDescription = if (isWatched) stringResource(R.string.watched) else stringResource(
+                                R.string.mark_as_watched
+                            )
                         )
                     }
                 }
@@ -555,29 +558,29 @@ fun MovieItem(
                     TextButton(onClick = { context.openInImdb(movie.imdbId) }) {
                         Icon(
                             Icons.Default.Info,
-                            contentDescription = "IMDb",
+                            contentDescription = stringResource(R.string.imdb),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Open in IMDb")
+                        Text(stringResource(R.string.open_in_imdb))
                     }
                     TextButton(onClick = { context.shareMovie(movie.imdbId) }) {
                         Icon(
                             Icons.Default.Share,
-                            contentDescription = "Share",
+                            contentDescription = stringResource(R.string.share),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Share")
+                        Text(stringResource(R.string.share))
                     }
                     TextButton(onClick = onDelete) {
                         Icon(
                             Icons.Default.Delete,
-                            contentDescription = "Delete",
+                            contentDescription = stringResource(R.string.delete),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Delete")
+                        Text(stringResource(R.string.delete))
                     }
                 }
             }
@@ -707,7 +710,7 @@ fun SeriesItem(
                     seriesWithEpisodes.currentEpisode?.let { episode ->
                         if (!episode.detailsFetched) {
                             Text(
-                                text = "Fetching episode details...",
+                                text = stringResource(R.string.fetching_episode_details),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
@@ -742,7 +745,7 @@ fun SeriesItem(
                         IconButton(onClick = onUnwatchedToggle) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Undo,
-                                contentDescription = "Undo last episode"
+                                contentDescription = stringResource(R.string.undo_last_episode)
                             )
                         }
                     }
@@ -759,29 +762,29 @@ fun SeriesItem(
                     TextButton(onClick = { context.openInImdb(seriesWithEpisodes.series.imdbId) }) {
                         Icon(
                             Icons.Default.Info,
-                            contentDescription = "IMDb",
+                            contentDescription = stringResource(R.string.imdb),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Open in IMDb")
+                        Text(stringResource(R.string.open_in_imdb))
                     }
                     TextButton(onClick = { context.shareSeries(seriesWithEpisodes.series.imdbId) }) {
                         Icon(
                             Icons.Default.Share,
-                            contentDescription = "Share",
+                            contentDescription = stringResource(R.string.share),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Share")
+                        Text(stringResource(R.string.share))
                     }
                     TextButton(onClick = onDelete) {
                         Icon(
                             Icons.Default.Delete,
-                            contentDescription = "Delete",
+                            contentDescription = stringResource(R.string.delete),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Delete")
+                        Text(stringResource(R.string.delete))
                     }
                 }
             }
@@ -811,9 +814,10 @@ fun Context.shareSeries(imdbId: String) {
     Log.d("IntentAction", "Sharing series with ID: $imdbId")
     val shareIntent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, "Check out this series: https://www.imdb.com/title/$imdbId/")
+        putExtra(Intent.EXTRA_TEXT,
+            getString(R.string.check_out_this_series_https_www_imdb_com_title, imdbId))
     }
-    startActivity(Intent.createChooser(shareIntent, "Share with"))
+    startActivity(Intent.createChooser(shareIntent, getString(R.string.share_with)))
 }
 
 
@@ -826,9 +830,10 @@ fun Context.shareMovie(imdbId: String) {
     Log.d("IntentAction", "Sharing movie with ID: $imdbId")
     val shareIntent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, "Check out this movie: https://www.imdb.com/title/$imdbId/")
+        putExtra(Intent.EXTRA_TEXT,
+            getString(R.string.check_out_this_movie_https_www_imdb_com_title, imdbId))
     }
-    startActivity(Intent.createChooser(shareIntent, "Share with"))
+    startActivity(Intent.createChooser(shareIntent, getString(R.string.share_with)))
 }
 
 

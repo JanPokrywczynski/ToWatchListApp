@@ -10,12 +10,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.example.moviestowatchlist.R
 import com.example.moviestowatchlist.data.remote.SearchResult
 import java.util.Locale
 
@@ -48,14 +50,14 @@ fun SearchScreen(
                 value = query,
                 onValueChange = { query = it },
                 modifier = Modifier.weight(1f),
-                label = { Text("Search title") },
+                label = { Text(stringResource(R.string.search_title)) },
                 singleLine = true
             )
             Spacer(modifier = Modifier.width(8.dp))
             Button(onClick = {
                 viewModel.search(query.text, selectedType)
             }) {
-                Text("Search")
+                Text(stringResource(R.string.search_button))
             }
         }
 
@@ -67,13 +69,13 @@ fun SearchScreen(
             FilterChip(
                 selected = selectedType == "movie",
                 onClick = { selectedType = "movie" },
-                label = { Text("Movies") }
+                label = { Text(stringResource(R.string.movies)) }
             )
             Spacer(modifier = Modifier.width(8.dp))
             FilterChip(
                 selected = selectedType == "series",
                 onClick = { selectedType = "series" },
-                label = { Text("Series") }
+                label = { Text(stringResource(R.string.series)) }
             )
         }
 
@@ -83,7 +85,7 @@ fun SearchScreen(
 
         // Display different UI based on current state
         when (uiState) {
-            is SearchUiState.Idle -> Text("Enter query to search.")
+            is SearchUiState.Idle -> Text(stringResource(R.string.enter_query_to_search))
             is SearchUiState.Loading -> CircularProgressIndicator()
             is SearchUiState.Error -> {
                 val message = (uiState as SearchUiState.Error).message
@@ -94,7 +96,7 @@ fun SearchScreen(
             is SearchUiState.Success -> {
                 val results = (uiState as SearchUiState.Success).results
                 if (results.isEmpty()) {
-                    Text("No results found.")
+                    Text(stringResource(R.string.no_results_found))
                     Log.d("SearchScreen", "Search returned 0 results.")
 
                 } else {

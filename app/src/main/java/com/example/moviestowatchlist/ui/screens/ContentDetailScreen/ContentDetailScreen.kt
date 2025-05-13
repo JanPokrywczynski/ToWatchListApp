@@ -60,6 +60,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,6 +69,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.example.moviestowatchlist.R
 import com.example.moviestowatchlist.data.local.Movies.MoviesEntity
 import com.example.moviestowatchlist.data.remote.ContentDetail
 import com.example.moviestowatchlist.data.remote.Episode
@@ -540,7 +542,7 @@ fun EpisodesSection(
             ) {
                 for (season in 1..totalSeasons) {
                     DropdownMenuItem(
-                        text = { Text("Season $season") },
+                        text = { Text(stringResource(R.string.season, season)) },
                         onClick = {
                             isDropdownExpanded = false
                             onSeasonSelected(season)
@@ -559,7 +561,7 @@ fun EpisodesSection(
 
             // Show error message if episode fetch failed
             is EpisodesUiState.Error -> Text(
-                text = "Error: ${episodesUiState.message}",
+                text = stringResource(R.string.error, episodesUiState.message),
                 color = MaterialTheme.colorScheme.error
             )
             // Show list of episodes when successfully loaded
@@ -676,7 +678,7 @@ fun RoundedCheckbox(
             if (checked) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "Watched",
+                    contentDescription = stringResource(R.string.watched),
                     tint = iconTint,
                     modifier = Modifier
                         .padding(4.dp)
@@ -713,11 +715,11 @@ fun ContentInformations(
         ) {
             Icon(
                 imageVector = Icons.Default.CalendarMonth,
-                contentDescription = "Release Date",
+                contentDescription = stringResource(R.string.release_date),
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = content.released ?: "Unknown",
+                text = content.released ?: stringResource(R.string.unknown),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -731,11 +733,11 @@ fun ContentInformations(
         ) {
             Icon(
                 imageVector = Icons.Default.Schedule,
-                contentDescription = "Runtime",
+                contentDescription = stringResource(R.string.runtime),
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = content.runtime ?: "Unknown",
+                text = content.runtime ?: stringResource(R.string.unknown),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -749,11 +751,11 @@ fun ContentInformations(
         ) {
             Icon(
                 imageVector = Icons.Default.Category,
-                contentDescription = "Genre",
+                contentDescription = stringResource(R.string.genre),
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = content.genre ?: "Unknown",
+                text = content.genre ?: stringResource(R.string.unknown),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -797,7 +799,7 @@ fun DetailsButtons(
             modifier = Modifier.weight(1f)
 
         ) {
-            Text("Add to Watchlist")
+            Text(stringResource(R.string.add_to_watchlist))
         }
 
 
@@ -811,7 +813,7 @@ fun DetailsButtons(
                     contentColor = if (isWatched) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimary
                 )
             ) {
-                Text(if (isWatched) "Unmark Watched" else "Mark as Watched")
+                Text(if (isWatched) stringResource(R.string.unmark_watched) else stringResource(R.string.mark_as_watched))
             }
         }
     }
@@ -899,7 +901,9 @@ fun ContentRatings(
             ) {
                 Icon(
                     imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = if (expanded) "Show less" else "Show more"
+                    contentDescription = if (expanded) stringResource(R.string.show_less) else stringResource(
+                        R.string.show_more
+                    )
                 )
             }
         }
@@ -980,7 +984,7 @@ fun ContentDescription(
     ) {
         // --- Section title ---
         Text(
-            text = "Description",
+            text = stringResource(R.string.description),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 8.dp)
@@ -1019,7 +1023,7 @@ fun ContentDescription(
         ) {
             Icon(
                 imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = if (expanded) "Show less" else "Show more"
+                contentDescription = if (expanded) stringResource(R.string.show_less) else stringResource(R.string.show_more)
             )
         }
     }
@@ -1051,7 +1055,7 @@ fun ContentActors(
     ) {
         // --- Section title ---
         Text(
-            text = "Actors",
+            text = stringResource(R.string.actors),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 8.dp)
@@ -1106,7 +1110,7 @@ private fun ContentInformationsBlock(
 
     // --- Always visible: Description block ---
     ContentDescription(
-        plot = content.plot ?: "No description available",
+        plot = content.plot ?: stringResource(R.string.no_description_available),
         expanded = isDescriptionExpanded,
         onExpandToggle = onExpandDesc
     )
