@@ -807,6 +807,7 @@ fun DetailsButtons(
         if (showMarkAsWatched) {
             Button(
                 onClick = onMarkWatched,
+                enabled = isAlreadyAdded,
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isWatched) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primary,
