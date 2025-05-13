@@ -52,6 +52,10 @@ sealed interface ContentDetailUiState {
 }
 
 
+
+
+
+
 /**
  * Represents all possible UI states for the episode list section of the screen.
  * Used to display loading, success or error messages for episodes of a specific season.
@@ -66,6 +70,10 @@ sealed interface EpisodesUiState {
     /** Indicates that an error occurred while loading episodes. */
     data class Error(val message: String) : EpisodesUiState
 }
+
+
+
+
 
 
 class ContentDetailViewModel(
@@ -102,6 +110,9 @@ class ContentDetailViewModel(
     /** Contains a list of episodes retrieved from the local database for the current series. */
     private val _localEpisodes = MutableStateFlow<List<EpisodesEntity>>(emptyList())
     val localEpisodes: StateFlow<List<EpisodesEntity>> = _localEpisodes.asStateFlow()
+
+
+
 
 
     /**
@@ -165,6 +176,8 @@ class ContentDetailViewModel(
     }
 
 
+
+
     /**
      * Attempts to load content from the local Room database if it could not be retrieved from the API.
      * Checks first for a movie, then for a series. Updates the UI state accordingly.
@@ -200,6 +213,9 @@ class ContentDetailViewModel(
     }
 
 
+
+
+
     /**
      * Loads all episodes for a given series from the local Room database.
      * Updates the internal state to reflect the current list of episodes.
@@ -219,6 +235,10 @@ class ContentDetailViewModel(
             }
         }
     }
+
+
+
+
 
 
     /**
@@ -268,6 +288,9 @@ class ContentDetailViewModel(
     }
 
 
+
+
+
     /**
      * Saves a movie to the local Room database using data from the API response.
      * After saving, re-checks whether the item is marked as already added.
@@ -298,6 +321,10 @@ class ContentDetailViewModel(
             checkIfAlreadyAdded(content.imdbId)
         }
     }
+
+
+
+
 
 
     /**
@@ -398,6 +425,10 @@ class ContentDetailViewModel(
     }
 
 
+
+
+
+
     /**
      * Loads all watched episodes for a given series from the local database.
      * Filters only the episodes marked as watched and updates the ViewModel state.
@@ -416,6 +447,9 @@ class ContentDetailViewModel(
             }
         }
     }
+
+
+
 
 
     /**
@@ -448,6 +482,9 @@ class ContentDetailViewModel(
     }
 
 
+
+
+
     /**
      * Checks whether the given movie has been marked as watched (based on non-null watchedDate).
      * Updates the UI state accordingly.
@@ -465,6 +502,10 @@ class ContentDetailViewModel(
             Log.d("ContentDetailViewModel", "Movie watched = $isWatched")
         }
     }
+
+
+
+
 
 
     /**
@@ -504,6 +545,9 @@ class ContentDetailViewModel(
     }
 
 
+
+
+
     /**
      * Checks whether the content (movie or series) with the given IMDb ID
      * has already been added to the local database.
@@ -528,6 +572,9 @@ class ContentDetailViewModel(
             )
         }
     }
+
+
+
 
 
     /**
@@ -585,6 +632,9 @@ class ContentDetailViewModel(
     }
 
 }
+
+
+
 
 /**
  * In-memory cache for detailed content (movies or series) retrieved from the OMDb API.
