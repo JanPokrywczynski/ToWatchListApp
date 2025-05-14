@@ -122,6 +122,7 @@ class ContentDetailViewModel(
      * @param imdbId Unique IMDb identifier for the content.
      */
     fun loadContentById(imdbId: String) {
+        // Start a coroutine in the ViewModel's lifecycle-aware scope
         viewModelScope.launch {
             Log.d("ContentDetailViewModel", "Loading content for ID: $imdbId")
 
@@ -132,25 +133,30 @@ class ContentDetailViewModel(
                     "ContentDetailViewModel",
                     "Cache hit for ID: $imdbId, title: ${cachedContent.title}"
                 )
+
+                // Emit success state with cached data to UI
                 _uiState.value = ContentDetailUiState.Success(cachedContent)
-                return@launch
+                return@launch // Exit coroutine early
             }
 
-            // Set UI state to loading before making network call
+            // No cache hit — set UI state to loading
             _uiState.value = ContentDetailUiState.Loading
             Log.d("ContentDetailViewModel", "No cache found. Fetching from OMDb API...")
 
             try {
+                // Make API request using Retrofit + Moshi
                 val response = RetrofitClient.apiService.getContentDetails(
                     imdbId = imdbId,
                     apiKey = BuildConfig.OMDB_API_KEY
-                ).awaitResponse()
+                ).awaitResponse() // Suspend until response is received
 
                 Log.d(
                     "ContentDetailViewModel",
                     "API response received. Code: ${response.code()}, success: ${response.isSuccessful}"
                 )
 
+
+                // If response is valid and content is found
                 if (response.isSuccessful && response.body() != null && response.body()?.response != "False") {
                     val contentDetail = response.body()!!
 
@@ -158,18 +164,27 @@ class ContentDetailViewModel(
                         "ContentDetailViewModel",
                         "API success. Caching content. Title: ${contentDetail.title}"
                     )
+
+                    // Save to cache for future use
                     ContentDetailCache.put(imdbId, contentDetail)
 
+                    // Emit success state with fetched content
                     _uiState.value = ContentDetailUiState.Success(contentDetail)
                 } else {
+
+                    // API responded but content not found or response invalid
                     Log.w(
                         "ContentDetailViewModel",
                         "API error or empty response. Falling back to local database."
                     )
+                    // Fallback to Room database
                     fetchFromLocalDatabase(imdbId)
                 }
             } catch (e: Exception) {
+                // Network or unexpected error during API request
                 Log.e("ContentDetailViewModel", "API request failed: ${e.localizedMessage}", e)
+
+                // Fallback to Room database
                 fetchFromLocalDatabase(imdbId)
             }
         }
@@ -191,6 +206,7 @@ class ContentDetailViewModel(
         val movie = moviesRepository.getMovieById(imdbId).firstOrNull()
         if (movie != null) {
             Log.d("ContentDetailViewModel", "Movie found locally: ${movie.title}")
+            // Update UI state with loaded movie data
             _uiState.value = ContentDetailUiState.MovieLoaded(movie)
             return
         }
@@ -199,12 +215,16 @@ class ContentDetailViewModel(
         val series = seriesRepository.getSeriesById(imdbId).firstOrNull()
         if (series != null) {
             Log.d("ContentDetailViewModel", "Series found locally: ${series.title}")
-            loadEpisodesForSeries(series.imdbId) // load episodes before setting UI state
+
+            // Trigger episode loading before setting the UI state
+            loadEpisodesForSeries(series.imdbId)
+
+            // Update UI state with loaded series data
             _uiState.value = ContentDetailUiState.SeriesLoaded(series)
             return
         }
 
-        // Neither movie nor series found in the database
+        // Neither movie nor series found in the database - emit "Not Found" state
         Log.w(
             "ContentDetailViewModel",
             "No matching content found in local database for ID: $imdbId"
@@ -229,8 +249,10 @@ class ContentDetailViewModel(
                 "Loading episodes from database for seriesId: $seriesId"
             )
 
+            // Collects a Flow<List<EpisodesEntity>> from the repository
             episodeRepository.getEpisodesForSeries(seriesId).collect { episodes ->
                 Log.d("ContentDetailViewModel", "Loaded ${episodes.size} episodes from database")
+                // Update the StateFlow used by the UI layer
                 _localEpisodes.value = episodes
             }
         }
@@ -262,19 +284,23 @@ class ContentDetailViewModel(
                     apiKey = BuildConfig.OMDB_API_KEY
                 ).awaitResponse()
 
+                // Extract response body (SeasonDetail object)
                 val seasonDetail = response.body()
 
+                // Check response validity: HTTP success + "Response" field == "True"
                 if (response.isSuccessful && seasonDetail?.response == "True" && seasonDetail.episodes != null) {
                     Log.d(
                         "ContentDetailViewModel",
                         "Season $season loaded successfully with ${seasonDetail.episodes.size} episodes."
                     )
 
+                    // Update the UI state with successfully loaded episodes
                     _episodesState.value = EpisodesUiState.Success(
                         season = season,
                         episodes = seasonDetail.episodes
                     )
                 } else {
+                    // Handle logical error returned by API (e.g., "Series not found.")
                     val errorMessage = seasonDetail?.error ?: "Failed to load episodes."
                     Log.w("ContentDetailViewModel", "API error or empty response: $errorMessage")
                     _episodesState.value = EpisodesUiState.Error(errorMessage)
@@ -585,50 +611,10 @@ class ContentDetailViewModel(
      * @param seriesId The IMDb ID of the series whose episodes should be enriched.
      */
     private fun enrichEpisodesInBackground(seriesId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            Log.d("ContentDetailViewModel", "Starting background enrichment for series: $seriesId")
-
-            // Load all episodes for the series
-            val episodes = episodeRepository.getEpisodesForSeries(seriesId).first()
-
-            // Filter only episodes that have not been enriched yet
-            val episodesToUpdate = episodes.filter { !it.detailsFetched }
-            Log.d("ContentDetailViewModel", "Found ${episodesToUpdate.size} episodes to enrich")
-
-            // Enrich each episode one by one
-            for (episode in episodesToUpdate) {
-                try {
-                    val response = RetrofitClient.apiService.getContentDetails(
-                        imdbId = episode.imdbId,
-                        apiKey = BuildConfig.OMDB_API_KEY
-                    ).awaitResponse()
-
-                    val details = response.body()
-                    if (response.isSuccessful && details?.response == "True") {
-                        val updated = episode.copy(
-                            runtime = details.runtime,
-                            plot = details.plot,
-                            detailsFetched = true
-                        )
-                        episodeRepository.addEpisodes(listOf(updated))
-                        Log.d("ContentDetailViewModel", "Enriched episode: ${episode.imdbId}")
-                    } else {
-                        Log.w(
-                            "ContentDetailViewModel",
-                            "Failed to enrich episode ${episode.imdbId}: API returned invalid response"
-                        )
-                    }
-                } catch (e: Exception) {
-                    Log.e(
-                        "ContentDetailViewModel",
-                        "Error enriching episode ${episode.imdbId}: ${e.localizedMessage}",
-                        e
-                    )
-                }
-            }
-
-            Log.d("ContentDetailViewModel", "Finished enriching episodes for series: $seriesId")
+        viewModelScope.launch {
+            episodeRepository.enrichEpisodesForSeries(seriesId)
         }
+
     }
 
 }
