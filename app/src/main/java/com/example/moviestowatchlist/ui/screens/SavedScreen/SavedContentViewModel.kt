@@ -97,60 +97,48 @@ class SavedContentViewModel(
 
             // Observe changes to the selected content type (e.g., "movie" or "series").
             // Whenever the selected type changes, flatMapLatest cancels the previous flow and starts a new one.
-            _selectedType
-                .flatMapLatest { type ->
-                    // This block will re-execute each time _selectedType.value changes.
-                    // Based on the value, a new data flow (e.g., from a repository) will be started.
-                    _uiState.value = SavedContentUiState.Loading
-                    Log.d("SavedContentViewModel", "Selected type changed to: $type")
+            _selectedType.collect { type ->
+                Log.d("SavedContentViewModel", "Selected type changed to: $type")
 
-
-                    when (type) {
-                        "movie" -> {
+                // Cancel any previously running collection job for movies
+                // and update UI state based on the selected type
+                when (type) {
+                    "movie" -> {
+                        // Launch a new coroutine for observing movies separately
+                        viewModelScope.launch {
                             // Map movies list into a MoviesSuccess UI state
-                            moviesRepository.moviesFlow.map {
-                                Log.d("SavedContentViewModel", "Loaded ${it.size} saved movies.")
-                                SavedContentUiState.MoviesSuccess(it)
-                            }
+                            moviesRepository.moviesFlow
+                                .map {
+                                    Log.d("SavedContentViewModel", "Loaded ${it.size} saved movies.")
+                                    if (it.isEmpty()) SavedContentUiState.Empty
+                                    else SavedContentUiState.MoviesSuccess(it)
+                                }
+
+                                // Catch any exception that occurs in the upstream flow (e.g., from Room or mapping)
+                                // Logs the error and updates the UI state with an error message to inform the user
+                                .catch { e ->
+                                    Log.e("SavedContentViewModel", "Error loading movies: ${e.message}")
+                                    _uiState.value = SavedContentUiState.Error(e.message ?: "Unknown error")
+                                }
+
+                                // Collect the emitted UI state from the flow and update the screen accordingly
+                                .collect { state ->
+                                    _uiState.value = state
+                                }
                         }
+                    }
 
+                    "series" -> {
+                        // Start observing series separately (state will be updated internally)
+                        observeSeriesWithEpisodes()
+                    }
 
-                        "series" -> {
-                            // Start observing series separately (state will be updated internally)
-                            observeSeriesWithEpisodes()
-                            flowOf() // Return an empty flow here — nothing to emit directly
-                        }
-
-                        else -> flowOf(SavedContentUiState.Empty)
+                    else -> {
+                        Log.w("SavedContentViewModel", "Unknown type: $type")
+                        _uiState.value = SavedContentUiState.Empty
                     }
                 }
-
-                // Catch any exception that occurs in the upstream flow (e.g., from Room or mapping)
-                // Logs the error and updates the UI state with an error message to inform the user
-                .catch { e ->
-                    Log.e("SavedContentViewModel", "Error during content observation: ${e.message}")
-                    _uiState.value = SavedContentUiState.Error(e.message ?: "Unknown error")
-                }
-
-
-                // Collect the emitted UI state from the flow and update the screen accordingly
-                .collect { state ->
-
-                    // Only handle movie-related state here. Series state is managed in a separate observer.
-                    if (state is SavedContentUiState.MoviesSuccess) {
-                        _uiState.value =
-                            if (state.movies.isEmpty()) {
-                                Log.d("SavedContentViewModel", "No saved movies found.")
-
-                                SavedContentUiState.Empty
-                            } else {
-                                state
-                            }
-                    } else if (state is SavedContentUiState.Empty) {
-                        Log.d("SavedContentViewModel", "Saved content is empty.")
-                        _uiState.value = state
-                    }
-                }
+            }
         }
     }
 
@@ -309,10 +297,13 @@ class SavedContentViewModel(
                     )
 
                     // Update UI state with loaded series and their episodes
-                    _uiState.value = if (seriesWithEpisodes.isEmpty())
-                        SavedContentUiState.Empty
-                    else
-                        SavedContentUiState.SeriesWithEpisodesSuccess(seriesWithEpisodes)
+                    // Only update UI state if the currently selected tab is "series"
+                    if (_selectedType.value == "series") {
+                        _uiState.value = if (seriesWithEpisodes.isEmpty())
+                            SavedContentUiState.Empty
+                        else
+                            SavedContentUiState.SeriesWithEpisodesSuccess(seriesWithEpisodes)
+                    }
 
 
 
