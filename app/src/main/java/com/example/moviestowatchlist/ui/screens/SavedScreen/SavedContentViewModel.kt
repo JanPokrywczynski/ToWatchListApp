@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -100,7 +101,7 @@ class SavedContentViewModel(
                 .flatMapLatest { type ->
                     // This block will re-execute each time _selectedType.value changes.
                     // Based on the value, a new data flow (e.g., from a repository) will be started.
-
+                    _uiState.value = SavedContentUiState.Loading
                     Log.d("SavedContentViewModel", "Selected type changed to: $type")
 
 
@@ -276,6 +277,11 @@ class SavedContentViewModel(
             // Start observing the list of saved series from the repository.
             seriesRepository.seriesFlow
                 .flatMapLatest { seriesList ->
+                    // Skip emission if not viewing the series tab
+                    if(_selectedType.value != "series") {
+                        return@flatMapLatest emptyFlow()
+                    }
+
                     // If the list of series is empty, emit an empty UI state and stop.
                     if (seriesList.isEmpty()) {
                         _uiState.value = SavedContentUiState.Empty
