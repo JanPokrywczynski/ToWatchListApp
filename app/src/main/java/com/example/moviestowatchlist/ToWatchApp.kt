@@ -35,7 +35,7 @@ import com.example.moviestowatchlist.ui.screens.SearchScreen.SearchScreen
 
 /**
  * Main composable function for the application.
- * Handles navigation, top bar, and snackbar state.
+ * Handles navigation, top bar.
  *
  * @param navController Navigation controller for handling screen transitions.
  */
